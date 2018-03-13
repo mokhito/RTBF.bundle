@@ -53,23 +53,48 @@ def ShowsMenu(title):
 @route(PREFIX + '/getshowvideos')
 def GetShowVideos(title, show_id):
 
-	oc = ObjectContainer(title2=title)
+	oc = ObjectContainer(title2=title.encode("utf-8"))
 	
 	json_url = MEDIA_LIST_JSON % (show_id, PARTNER_KEY)
 	videos = JSON.ObjectFromURL(json_url, headers={"X-Requested-With": "XMLHttpRequest"})
 
 	for video in videos:
-		stream_url = video["url_embed"] if video["is_external"] == "1" else video["url_streaming"]["url_hls"]
+		stream_url = video["url_embed"] if video["is_external"] == "1" else video["url_streaming"]["url_high"]
 		video_title = video["title"].encode("utf-8")
-		video_show = video["program"]["label"].encode("utf-8")
+		#video_show = video["program"]["label"].encode("utf-8")
 		video_desc = video["description"].encode("utf-8")
-		oc.add(EpisodeObject(
-			url = stream_url,
-			title = video_title,
-			show = video_show,
-			summary = video_desc,
-			duration = int(video["duration"]),
-			thumb = Resource.ContentsOfURLWithFallback(url=video["images"]["illustration"]["16x9"]["770x433"], fallback="icon-default.jpg")
-		))
+		#duration = video["duration"]
+		thumb = Resource.ContentsOfURLWithFallback(url=video["images"]["illustration"]["16x9"]["770x433"], fallback="icon-default.jpg")
+		
+		oc.add(CreateVideoObject(show_id, stream_url, video_title, video_desc, thumb))
 
 	return oc
+
+####################################################################################################
+@route(PREFIX + '/video')
+def CreateVideoObject(show_id, stream_url, title, summary, thumb, include_container=False, **kwargs):
+  video_obj = VideoClipObject(
+		key=Callback(CreateVideoObject, show_id=show_id, stream_url=stream_url, 
+									title=title, summary=summary, thumb=thumb, 
+									include_container=True),
+		rating_key=show_id,
+		title=title,
+		summary=summary,
+		thumb=thumb,
+		items=[
+			MediaObject(
+				parts=[
+					PartObject(key=HTTPLiveStreamURL(stream_url))
+				],
+				video_resolution = '720',
+				audio_channels = 1,
+				optimized_for_streaming = True
+			)
+		]
+  )
+
+  if include_container:
+    return ObjectContainer(objects=[video_obj])
+  else:
+		return video_obj
+
