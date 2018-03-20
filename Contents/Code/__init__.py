@@ -8,6 +8,14 @@ PARTNER_KEY = "82ed2c5b7df0a9334dfbda21eccd8427"
 SHOWS_URL = "https://www.rtbf.be/auvio/emissions"
 MEDIA_LIST_JSON = "https://www.rtbf.be/api/partner/generic/media/objectlist?v=8&program_id=%s&target_site=mediaz&offset=0&limit=10&partner_key=%s"
 
+SHOW_IDS = {
+	"laune": "",
+	"ladeux": "",
+	"latrois": "",
+	"lapremiere": "",
+	"vivacite": ""
+}
+
 ####################################################################################################
 def Start():
 
@@ -21,7 +29,12 @@ def Start():
 def MainMenu():
 
 	oc = ObjectContainer()
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="Emissions"), title="Emissions"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Une", key="laune"), title="La Une"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Deux", key="ladeux"), title="La Deux"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Trois", key="latrois"), title="La Trois"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Première", key="lapremiere"), title="La Première"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="Vivacité", key="vivacite"), title="Vivacité"))
+	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="Toutes les émissions RTBF", key="all"), title="Toutes les émissions RTBF"))
 	#oc.add(InputDirectoryObject(key=Callback(SearchMenu, title="Search PBS"), title="Search PBS"))
 	oc.add(PrefsObject(title = L('Preferences')))
 
@@ -29,7 +42,7 @@ def MainMenu():
 
 ####################################################################################################
 @route(PREFIX + '/showmenu')
-def ShowsMenu(title):
+def ShowsMenu(title, key):
 
 	oc = ObjectContainer(title2=title)
 	page = HTML.ElementFromURL(SHOWS_URL)
