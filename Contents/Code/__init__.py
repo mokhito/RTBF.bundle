@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 NAME = "RTBF"
 ART = "art-default.jpg"
 ICON = "icon-default.jpg"
@@ -5,18 +7,18 @@ PREFIX = '/video/rtbf'
 
 PARTNER_KEY = "82ed2c5b7df0a9334dfbda21eccd8427"
 
-SHOWS_URL = "https://www.rtbf.be/auvio/emissions"
+ALL_SHOWS_URL = "https://www.rtbf.be/auvio/emissions"
 MEDIA_LIST_JSON = "https://www.rtbf.be/api/partner/generic/media/objectlist?v=8&program_id=%s&target_site=mediaz&offset=0&limit=10&partner_key=%s"
 
-SHOW_IDS = {
-	"laune": "",
-	"ladeux": "",
-	"latrois": "",
-	"lapremiere": "",
-	"vivacite": ""
+CHANNEL_SCHEDULE = {
+	"laune": "https://www.rtbf.be/auvio/chaine_la-une?id=1&date=%s",
+	"ladeux": "https://www.rtbf.be/auvio/chaine_la-deux?id=2&date=%s",
+	"latrois": "https://www.rtbf.be/auvio/chaine_la-trois?id=3&date=%s",
+	"lapremiere": "https://www.rtbf.be/auvio/chaine_la-premiere?id=17&date=%s",
+	"vivacite": "https://www.rtbf.be/auvio/chaine_vivacite?id=10&date=%s"
 }
 
-####################################################################################################
+################################################################################
 def Start():
 
 	ObjectContainer.title1 = NAME
@@ -24,28 +26,40 @@ def Start():
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36'
 
-####################################################################################################
+################################################################################
 @handler(PREFIX, NAME, art=ART, thumb=ICON)
 def MainMenu():
 
 	oc = ObjectContainer()
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Une", key="laune"), title="La Une"))
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Deux", key="ladeux"), title="La Deux"))
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Trois", key="latrois"), title="La Trois"))
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="La Première", key="lapremiere"), title="La Première"))
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="Vivacité", key="vivacite"), title="Vivacité"))
-	oc.add(DirectoryObject(key=Callback(ShowsMenu, title="Toutes les émissions RTBF", key="all"), title="Toutes les émissions RTBF"))
+	oc.add(DirectoryObject(key=Callback(ShowsByChannel, title="Emissions par chaine"), title="Emissions par chaine"))
+	oc.add(DirectoryObject(key=Callback(ShowByDay, title="Emissions par jour"), title="Emissions par jour"))
+	oc.add(DirectoryObject(key=Callback(AllShows, title="Toutes les émissions RTBF"), title="Toutes les émissions RTBF"))
 	#oc.add(InputDirectoryObject(key=Callback(SearchMenu, title="Search PBS"), title="Search PBS"))
 	oc.add(PrefsObject(title = L('Preferences')))
 
 	return oc
 
-####################################################################################################
-@route(PREFIX + '/showmenu')
-def ShowsMenu(title, key):
+################################################################################
+@route(PREFIX + '/shows_by_day')
+def ShowByDay(title, date=''):
+
+	if date == '':
+		oc = ObjectContainer(title2=title)
+
+		for i in range(0, 6, 1):
+			date = datetime.now() - timedelta(days=i)
+			date_str = date.strftime("%Y-%m-%d")
+			oc.add(DirectoryObject(key=Callback(ShowByDay, title=date_str), title=date_str))
+	
+
+	return oc
+
+################################################################################
+@route(PREFIX + '/all_shows')
+def AllShows(title):
 
 	oc = ObjectContainer(title2=title)
-	page = HTML.ElementFromURL(SHOWS_URL)
+	page = HTML.ElementFromURL(ALL_SHOWS_URL)
 
 	shows_elements = page.xpath("//article[contains(@class, 'rtbf-media-item')]")
 
@@ -62,7 +76,7 @@ def ShowsMenu(title, key):
 
 	return oc
 
-####################################################################################################
+################################################################################
 @route(PREFIX + '/getshowvideos')
 def GetShowVideos(title, show_id):
 
@@ -83,7 +97,7 @@ def GetShowVideos(title, show_id):
 
 	return oc
 
-####################################################################################################
+################################################################################
 @route(PREFIX + '/video')
 def CreateVideoObject(show_id, stream_url, title, summary, thumb, include_container=False, **kwargs):
   video_obj = VideoClipObject(
